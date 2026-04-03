@@ -17,3 +17,6 @@ node_modules
 .pnp.*
 
 *.tsbuildinfo
+
+# build artifacts
+dist

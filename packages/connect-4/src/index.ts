@@ -1,3 +1,6 @@
-import { hello } from 'hello-js';
+import { render, h } from 'hello-js';
 
-console.log('hello:', hello);
+render(
+  h('h1', { style: 'background-color: blue' }, 'hello', ' ', h('span', 'world')),
+  document.getElementById('app')!,
+);
