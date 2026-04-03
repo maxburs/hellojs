@@ -1,18 +1,21 @@
-import type { Dispose } from '.';
-import type { HJElementNode } from './template';
+import type { Dispose } from './types';
+import type { HJNode } from './template';
 
 export function render(
-  node: HJElementNode,
+  node: HJNode,
   target: HTMLElement,
   options?: { signal?: AbortSignal },
 ): Dispose {
-  const element = document.createElement(node.tagName);
-  Object.assign(element, node.properties);
-  for (const child of node.children) {
-    if (child.tagName === 'text') {
-      element.appendChild(document.createTextNode(child.text));
-    } else {
-      render(child, element);
+  let element: Node;
+
+  if (node.tagName === 'text') {
+    element = document.createTextNode(node.text);
+  } else {
+    const htmlElement = document.createElement(node.tagName);
+    element = htmlElement;
+    Object.assign(htmlElement, node.properties);
+    for (const child of node.children) {
+      render(child, htmlElement);
     }
   }
 

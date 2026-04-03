@@ -1,4 +1,4 @@
-import type { Dispose } from '.';
+import type { Dispose } from './types';
 
 export type Invalidate = () => void;
 
