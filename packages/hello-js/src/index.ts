@@ -51,8 +51,10 @@ export function h<T extends keyof HTMLElementTagNameMap>(
   }
 
   if (text) {
-      properties = { innerText: '', ...properties }  as Partial<HTMLElementTagNameMap[T]>;
-      properties.innerText += text;
+    properties = { innerText: '', ...properties } as Partial<
+      HTMLElementTagNameMap[T]
+    >;
+    properties.innerText += text;
   } else {
     properties ??= {};
   }

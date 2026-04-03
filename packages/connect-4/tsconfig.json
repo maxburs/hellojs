@@ -23,5 +23,5 @@
     "noUncheckedSideEffectImports": true
   },
   "include": ["src"],
-  "references": [{ "path": "../hello-js/tsconfig.build.json" }],
+  "references": [{ "path": "../hello-js/tsconfig.build.json" }]
 }
