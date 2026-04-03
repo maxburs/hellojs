@@ -1,0 +1,5 @@
+{
+  "$schema": "https://www.schemastore.org/tsconfig",
+  "include": [],
+  "references": [{ "path": "./packages/hello-js/tsconfig.build.json"}]
+}

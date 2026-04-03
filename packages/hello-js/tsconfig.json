@@ -1,0 +1,5 @@
+{
+  "$schema": "https://www.schemastore.org/tsconfig",
+  "extends": "@hello-js/tsconfig/check.json",
+  "references": [{ "path": "./tsconfig.build.json" }],
+}
