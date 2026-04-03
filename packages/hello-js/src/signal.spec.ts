@@ -30,8 +30,8 @@ test('effect', ({ signal }) => {
       "[read A1]: a",
       "[read A2]: a",
       "[read B]: b",
-      "[read A1]: 1",
       "[read A2]: 1",
+      "[read A1]: 1",
       "[read A2]: 1",
       "[read B]: 2",
     ]
@@ -79,8 +79,8 @@ test('cleanup complex', () => {
   expect(timeline).toMatchInlineSnapshot(`
     [
       "[cleanup 2]",
-      "[cleanup 1]",
       "[cleanup 2]",
+      "[cleanup 1]",
       "[cleanup 3]",
     ]
   `);
@@ -120,15 +120,16 @@ test('compound', () => {
       "[read A1]: a",
       "[read A2]: a",
       "[read B]: b",
-      "[cleanup A1]",
       "[cleanup A2]",
-      "[read A1]: 1",
       "[read A2]: 1",
+      "[cleanup A2]",
+      "[cleanup A1]",
+      "[read A1]: 1",
       "[read A2]: 1",
       "[cleanup B]",
       "[read B]: 2",
-      "[cleanup A1]",
       "[cleanup A2]",
+      "[cleanup A1]",
       "[cleanup B]",
     ]
   `);

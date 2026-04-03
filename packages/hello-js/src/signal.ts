@@ -1,9 +1,17 @@
 import type { Dispose } from '.';
 
+export type Invalidate = () => void;
+
+type Dependents = Invalidate[];
+
 let reader: undefined | Invalidate;
 let parent: undefined | Invalidate[];
 
-export type Invalidate = () => void;
+function clearDependents(dependents: Dependents) {
+  for (let i = dependents.length - 1; i >= 0; i--) {
+    dependents[i]();
+  }
+}
 
 export interface Signal<T = unknown> {
   (): T;
@@ -21,18 +29,16 @@ export function createSignal<T>(value: T): MutableSignal<T> {
     return value;
   }
 
-  let _dependents: Invalidate[] = [];
+  let _dependents: Dependents = [];
 
   signal.set = function set(_value: T) {
     const deps = _dependents;
-  
+
     // Update state before invalidating deps
     _dependents = [];
     value = _value;
-  
-    for (const d of deps) {
-      d();
-    }
+
+    clearDependents(deps);
   };
 
   signal._dependents = _dependents;
@@ -42,15 +48,13 @@ export function createSignal<T>(value: T): MutableSignal<T> {
 
 export function createComputed<T>(cb: () => T): () => T {
   let value: undefined | { dependentOn: Signal[]; value: T };
-  const _dependents: Invalidate[] = [];
+  let _dependents: Dependents = [];
 
   function invalidate() {
     value = undefined;
     const deps = _dependents;
-    _dependents.length = 0;
-    for (const d of deps) {
-      d();
-    }
+    _dependents = [];
+    clearDependents(deps);
   }
 
   function computed(): T {
@@ -83,14 +87,12 @@ export function effect(cb: () => void) {
 
   parent.push(clear);
 
-  let _dependents: Invalidate[] = [];
+  let _dependents: Dependents = [];
 
   function clear() {
     const deps = _dependents;
     _dependents = [];
-    for (const d of deps) {
-      d();
-    }
+    clearDependents(deps);
   }
 
   function invalidate() {
@@ -140,7 +142,7 @@ export function createRoot(
 
   const _reader = reader;
   const _parent = parent;
-  reader = undefined
+  reader = undefined;
   parent = _dependents;
 
   cb();
