@@ -83,11 +83,11 @@ export function effect(cb: () => void) {
 
   parent.push(clear);
 
-  const _dependents: Invalidate[] = [];
+  let _dependents: Invalidate[] = [];
 
   function clear() {
     const deps = _dependents;
-    _dependents.length = 0;
+    _dependents = [];
     for (const d of deps) {
       d();
     }
