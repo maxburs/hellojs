@@ -2,34 +2,41 @@ import type { Dispose } from './types';
 import type { HJNode } from './template';
 import { cleanup, createEffect, createRoot } from './signal';
 
-function _render(node: () => null | HJNode, target: HTMLElement) {
-  createEffect(() => {
-    const n = node();
+function applyResolvedNode(
+  node: Exclude<HJNode, Function>,
+  target: HTMLElement,
+) {
+  if (!node) {
+    return;
+  }
 
-    if (!n) {
-      return;
+  let element: Node;
+
+  if (typeof node === 'string') {
+    element = document.createTextNode(node);
+  } else {
+    const htmlElement = document.createElement(node.tagName);
+    element = htmlElement;
+    Object.assign(htmlElement, node.properties);
+    for (const child of node.children) {
+      _render(child, htmlElement);
     }
+  }
 
-    let element: Node;
+  target.appendChild(element);
+  cleanup(() => target.removeChild(element));
+}
 
-    if (n.tagName === 'text') {
-      element = document.createTextNode(n.text);
-    } else {
-      const htmlElement = document.createElement(n.tagName);
-      element = htmlElement;
-      Object.assign(htmlElement, n.properties);
-      for (const child of n.children) {
-        _render(child, htmlElement);
-      }
-    }
-
-    target.appendChild(element);
-    cleanup(() => target.removeChild(element));
-  });
+function _render(node: HJNode, target: HTMLElement) {
+  if (typeof node === 'function') {
+    createEffect(() => applyResolvedNode(node(), target));
+  } else {
+    applyResolvedNode(node, target);
+  }
 }
 
 export function render(
-  node: () => HJNode,
+  node: HJNode,
   target: HTMLElement,
   options?: { signal?: AbortSignal },
 ): Dispose {
