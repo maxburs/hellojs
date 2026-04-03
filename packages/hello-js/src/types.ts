@@ -1,8 +1,8 @@
 import type { Signal } from "./signal";
-import type { HJElementNode, HJNode } from "./template";
+import type { HJNode } from "./template";
 
 export type Dispose = () => void;
 
-export type HJNodeSignal = Signal<HJElementNode>;
+export type HJNodeSignal = Signal<HJNode>;
 
 export type Component = () => () => HJNode;

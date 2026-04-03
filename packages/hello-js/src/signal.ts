@@ -51,7 +51,9 @@ export function createSignal<T>(value: T): MutableSignal<T> {
   return signal as MutableSignal<T>;
 }
 
-export function createComputed<T>(cb: () => T): () => T {
+export type Computed<T> = () => T;
+
+export function createComputed<T>(cb: () => T): Computed<T> {
   if (!parent) {
     throw new Error(`createComputed must be called in a reactive context`);
   }
