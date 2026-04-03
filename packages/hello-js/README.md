@@ -1,9 +1,9 @@
 # Hello js
 
 ## TODO
-- [ ] Refs
+- [x] Refs
 - [ ] Transactions
-- [ ] Reactive templates
+- [x] Reactive templates
 - [ ] Memo signals
 - [ ] Signal children should be invalidated in reverse order
 - [ ] Fragments

@@ -16,10 +16,12 @@ function applyResolvedNode(
   } else {
     const htmlElement = document.createElement(node.tagName);
     element = htmlElement;
-    Object.assign(htmlElement, node.properties);
+    const { ref, ...attributes } = node.properties;
+    Object.assign(htmlElement, attributes);
     for (const child of node.children) {
       _render(child, htmlElement);
     }
+    ref?.(htmlElement as any);
   }
 
   target.appendChild(element);

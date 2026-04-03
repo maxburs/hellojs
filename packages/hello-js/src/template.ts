@@ -1,8 +1,8 @@
-import { type HJElementNode, type HJChild, type HJNode, NODE_IDENTIFIER } from './types';
+import { type HJElementNode, type HJChild, type HJNode, NODE_IDENTIFIER, type Props, type UHJElementNode } from './types';
 
 function childToNode(
-  child: null | false | string | HJElementNode,
-): null | string | HJElementNode {
+  child: null | false | string | UHJElementNode,
+): null | string | UHJElementNode {
   switch (typeof child) {
     case 'object':
     case 'string':
@@ -14,10 +14,10 @@ function childToNode(
 
 export function h<T extends keyof HTMLElementTagNameMap>(
   tagName: T,
-  props?: HJChild | Partial<HTMLElementTagNameMap[T]>,
+  props?: HJChild | Props<T>,
   ...children: HJChild[]
 ): HJElementNode<T> {
-  let properties: undefined | Partial<HTMLElementTagNameMap[T]>;
+  let properties: undefined | Props<T>;
   const nodes: HJNode[] = [];
 
   switch (typeof props) {
@@ -28,7 +28,7 @@ export function h<T extends keyof HTMLElementTagNameMap>(
       if (props && '$$node' in props && props.$$node === NODE_IDENTIFIER) {
         children.unshift(props);
       } else {
-        properties = props as Partial<HTMLElementTagNameMap[T]>;
+        properties = props as Props<T>;
       }
       break;
     case 'boolean':

@@ -1,5 +1,5 @@
 import { render, h } from 'hello-js';
-import { createSignal } from '../../hello-js/src/signal';
+import { cleanup, createSignal } from '../../hello-js/src/signal';
 
 function Connect4() {
   const text = createSignal('');
@@ -19,9 +19,17 @@ function Connect4() {
         ' ',
         h('span', 'world'),
       ),
-      h('input'),
+      h('input', {
+        ref: (element) => {
+          const onChange = (ev: InputEvent) => {
+            text.set((ev.target as HTMLInputElement).value);
+          };
+          element.addEventListener('input', onChange);
+          cleanup(() => element.removeEventListener('input', onChange));
+        },
+      }),
       h('div', text),
-      h('div', () => num().toString())
+      h('div', () => num().toString()),
     );
 }
 
