@@ -86,13 +86,13 @@ test('cleanup complex', () => {
   `);
 });
 
-test('compound', ({ signal }) => {
+test('compound', () => {
   const timeline: string[] = [];
 
   const signalA = createSignal('a');
   const signalB = createSignal('b');
 
-  createRoot(
+  const dispose = createRoot(
     () => {
       effect(() => {
         timeline.push(`[read A1]: ${signalA()}`);
@@ -110,9 +110,10 @@ test('compound', ({ signal }) => {
 
       signalA.set('1');
       signalB.set('2');
-    },
-    { signal },
+    }
   );
+
+  dispose();
 
   expect(timeline).toMatchInlineSnapshot(`
     [
@@ -126,6 +127,9 @@ test('compound', ({ signal }) => {
       "[read A2]: 1",
       "[cleanup B]",
       "[read B]: 2",
+      "[cleanup A1]",
+      "[cleanup A2]",
+      "[cleanup B]",
     ]
   `);
 });
