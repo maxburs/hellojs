@@ -1,0 +1,16 @@
+{
+  "name": "hellojs",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "@hello-js-src": "./src/index.ts"
+    }
+  },
+  "devDependencies": {
+    "@tsconfig/node24": "^24.0.4",
+    "@types/node": "24",
+    "prettier": "^3.8.1",
+    "typescript": "^6.0.2"
+  }
+}
