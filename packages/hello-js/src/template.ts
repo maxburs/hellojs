@@ -1,28 +1,35 @@
-const nodeIdentifier: unique symbol = Symbol();
+const NODE_IDENTIFIER: unique symbol = Symbol();
 
-export interface HelloJSNode<
+export interface HJElementNode<
   T extends keyof HTMLElementTagNameMap = keyof HTMLElementTagNameMap,
 > {
-  $$node: typeof nodeIdentifier;
+  $$node: typeof NODE_IDENTIFIER;
   tagName: T;
   properties: Partial<HTMLElementTagNameMap[T]>;
-  children: readonly HelloJSNode[];
+  children: readonly HJNode[];
 }
 
-export type HelloJSChild = null | false | string | HelloJSNode;
+export interface HJTextNode {
+  $$node: typeof NODE_IDENTIFIER;
+  tagName: 'text';
+  text: string;
+}
+
+export type HJNode = HJElementNode | HJTextNode;
+
+export type HJChild = null | false | string | HJNode;
 
 export function h<T extends keyof HTMLElementTagNameMap>(
   tagName: T,
-  props?: HelloJSChild | Partial<HTMLElementTagNameMap[T]>,
-  ...children: HelloJSChild[]
-): HelloJSNode<T> {
+  props?: HJChild | Partial<HTMLElementTagNameMap[T]>,
+  ...children: HJChild[]
+): HJElementNode<T> {
   let properties: undefined | Partial<HTMLElementTagNameMap[T]>;
-  const nodes: HelloJSNode[] = [];
-  let text = '';
+  const nodes: HJNode[] = [];
 
   switch (typeof props) {
     case 'object':
-      if (props && '$$node' in props && props.$$node === nodeIdentifier) {
+      if (props && '$$node' in props && props.$$node === NODE_IDENTIFIER) {
         children.unshift(props);
       } else {
         properties = props as Partial<HTMLElementTagNameMap[T]>;
@@ -39,7 +46,7 @@ export function h<T extends keyof HTMLElementTagNameMap>(
   for (const child of children) {
     switch (typeof child) {
       case 'string':
-        text += child;
+        nodes.push({ $$node: NODE_IDENTIFIER, tagName: 'text', text: child });
         break;
       case 'object':
         if (child !== null) {
@@ -47,15 +54,8 @@ export function h<T extends keyof HTMLElementTagNameMap>(
         }
     }
   }
+  
+  properties ??= {};
 
-  if (text) {
-    properties = { innerText: '', ...properties } as Partial<
-      HTMLElementTagNameMap[T]
-    >;
-    properties.innerText += text;
-  } else {
-    properties ??= {};
-  }
-
-  return { $$node: nodeIdentifier, tagName, properties, children: nodes };
+  return { $$node: NODE_IDENTIFIER, tagName, properties, children: nodes };
 }
