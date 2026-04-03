@@ -1,5 +1,4 @@
-import type { Dispose } from './types';
-import type { HJNode } from './template';
+import type { Dispose, HJNode } from './types';
 import { cleanup, createEffect, createRoot } from './signal';
 
 function applyResolvedNode(
