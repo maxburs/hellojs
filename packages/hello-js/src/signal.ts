@@ -8,9 +8,14 @@ let reader: undefined | Invalidate;
 let parent: undefined | Invalidate[];
 
 function clearDependents(dependents: Dependents) {
+  console.group('clear dependents');
   for (let i = dependents.length - 1; i >= 0; i--) {
     dependents[i]();
   }
+  // for (const d of dependents) {
+  //   d();
+  // }
+  console.groupEnd();
 }
 
 export interface Signal<T = unknown> {
@@ -47,32 +52,51 @@ export function createSignal<T>(value: T): MutableSignal<T> {
 }
 
 export function createComputed<T>(cb: () => T): () => T {
-  let value: undefined | { dependentOn: Signal[]; value: T };
-  let _dependents: Dependents = [];
+  if (!parent) {
+    throw new Error(`createComputed must be called in a reactive context`);
+  }
 
-  function invalidate() {
+  parent.push(computed__invalidate);
+
+  let value: undefined | { dependents: Signal[]; value: T };
+
+  function computed__invalidate() {
+    console.group('computed -- invalidate', value);
+    if (!value) {
+      console.groupEnd();
+      return;
+    }
+    const deps = value.dependents;
     value = undefined;
-    const deps = _dependents;
-    _dependents = [];
     clearDependents(deps);
+    console.groupEnd();
   }
 
   function computed(): T {
+    console.group('read computed', value);
     if (!value) {
-      const dependentOn: Signal[] = [];
+      const dependents: Invalidate[] = [];
 
       const _reader = reader;
       const _parent = parent;
-      reader = invalidate;
-      parent = _dependents;
+      reader = computed__invalidate;
+      parent = dependents
 
       const _value = cb();
+
+      console.log('computed -- dependents', dependents);
 
       reader = _reader;
       parent = _parent;
 
-      value = { dependentOn, value: _value };
+      value = { dependents, value: _value };
     }
+
+    if (reader) {
+      value.dependents.push(reader);
+    }
+
+    console.groupEnd();
 
     return value.value;
   }
@@ -80,39 +104,43 @@ export function createComputed<T>(cb: () => T): () => T {
   return computed;
 }
 
-export function effect(cb: () => void) {
+export function createEffect(cb: () => void) {
   if (!parent) {
     throw new Error(`effect must be called in a reactive context`);
   }
 
-  parent.push(clear);
+  parent.push(effect__clear);
 
-  let _dependents: Dependents = [];
+  let dependents: Dependents = [];
 
-  function clear() {
-    const deps = _dependents;
-    _dependents = [];
+  function effect__clear() {
+    console.group('effect__clear');
+    const deps = dependents;
+    dependents = [];
     clearDependents(deps);
+    console.groupEnd();
   }
 
-  function invalidate() {
-    clear();
-    evaluate();
+  function effect__invalidate() {
+    effect__clear();
+    effect__evaluate();
   }
 
-  function evaluate() {
+  function effect__evaluate() {
+    console.group('effect__evaluate');
     const _reader = reader;
     const _parent = parent;
-    reader = invalidate;
-    parent = _dependents;
+    reader = effect__invalidate;
+    parent = dependents;
 
     cb();
 
     reader = _reader;
     parent = _parent;
+    console.groupEnd();
   }
 
-  evaluate();
+  effect__evaluate();
 }
 
 export function cleanup(cb: () => void) {
@@ -126,29 +154,31 @@ export function createRoot(
   cb: () => void,
   options?: { signal?: AbortSignal },
 ): Dispose {
-  const _dependents: Invalidate[] = [];
+  const dependents: Invalidate[] = [];
 
-  function dispose() {
-    for (const d of _dependents) {
+  function root__dispose() {
+    console.group('root_dispose', dependents);
+    for (const d of dependents) {
       d();
     }
+    console.groupEnd();
   }
 
   if (options?.signal?.aborted) {
-    return dispose;
+    return root__dispose;
   }
 
-  options?.signal?.addEventListener('abort', dispose);
+  options?.signal?.addEventListener('abort', root__dispose);
 
   const _reader = reader;
   const _parent = parent;
   reader = undefined;
-  parent = _dependents;
+  parent = dependents;
 
   cb();
 
   reader = _reader;
   parent = _parent;
 
-  return dispose;
+  return root__dispose;
 }

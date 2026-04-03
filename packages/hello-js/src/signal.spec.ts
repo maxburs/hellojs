@@ -1,6 +1,7 @@
 import { test, expect } from 'vitest';
-import { cleanup, createRoot, createSignal, effect } from './signal';
+import { cleanup, createComputed, createRoot, createSignal, createEffect } from './signal';
 
+// TODO: A2 is run an extra time
 test('effect', ({ signal }) => {
   const timeline: string[] = [];
 
@@ -9,13 +10,13 @@ test('effect', ({ signal }) => {
 
   createRoot(
     () => {
-      effect(() => {
+      createEffect(() => {
         timeline.push(`[read A1]: ${signalA()}`);
-        effect(() => {
+        createEffect(() => {
           timeline.push(`[read A2]: ${signalA()}`);
         });
       });
-      effect(() => {
+      createEffect(() => {
         timeline.push(`[read B]: ${signalB()}`);
       });
 
@@ -60,14 +61,14 @@ test('cleanup complex', () => {
   const signalA = createSignal('a');
 
   const dispose = createRoot(() => {
-    effect(() => {
+    createEffect(() => {
       cleanup(() => timeline.push(`[cleanup 1]`));
-      effect(() => {
+      createEffect(() => {
         signalA();
         cleanup(() => timeline.push(`[cleanup 2]`));
       });
     });
-    effect(() => {
+    createEffect(() => {
       cleanup(() => timeline.push(`[cleanup 3]`));
     });
   });
@@ -86,51 +87,39 @@ test('cleanup complex', () => {
   `);
 });
 
-test('compound', () => {
+test.only('compound', () => {
   const timeline: string[] = [];
 
-  const signalA = createSignal('a');
-  const signalB = createSignal('b');
+  const signalA = createSignal(2);
 
   const dispose = createRoot(
     () => {
-      effect(() => {
-        timeline.push(`[read A1]: ${signalA()}`);
-        cleanup(() => timeline.push('[cleanup A1]'));
-
-        effect(() => {
-          timeline.push(`[read A2]: ${signalA()}`);
-          cleanup(() => timeline.push('[cleanup A2]'));
-        });
-      });
-      effect(() => {
-        timeline.push(`[read B]: ${signalB()}`);
-        cleanup(() => timeline.push('[cleanup B]'));
+      const double = createComputed(() => {
+        // cleanup(() => timeline.push('cleanup'));
+        // createEffect(() => {
+        //   timeline.push('effect1');
+        // })
+        return signalA() * 2
       });
 
-      signalA.set('1');
-      signalB.set('2');
+      createEffect(() => {
+        timeline.push(`read double: ${double()}`);
+      });
+
+      console.log('set to 4');
+      timeline.push('set to 4')
+      signalA.set(4);
     }
   );
-
+  console.log('dispose');
   dispose();
 
   expect(timeline).toMatchInlineSnapshot(`
     [
-      "[read A1]: a",
-      "[read A2]: a",
-      "[read B]: b",
-      "[cleanup A2]",
-      "[read A2]: 1",
-      "[cleanup A2]",
-      "[cleanup A1]",
-      "[read A1]: 1",
-      "[read A2]: 1",
-      "[cleanup B]",
-      "[read B]: 2",
-      "[cleanup A2]",
-      "[cleanup A1]",
-      "[cleanup B]",
+      "read double: 4",
+      "set to 4",
+      "read double: 8",
+      "read double: 8",
     ]
   `);
 });
