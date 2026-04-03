@@ -1,0 +1,13 @@
+{
+  "name": "hellojs",
+  "packageManager": "yarn@4.13.0",
+  "devDependencies": {
+    "@tsconfig/node24": "^24.0.4",
+    "@types/node": "24",
+    "prettier": "^3.8.1",
+    "typescript": "^6.0.2"
+  },
+  "scripts": {
+    "format": "prettier --write --ignore-unknown ."
+  }
+}
