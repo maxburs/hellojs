@@ -8,4 +8,5 @@
 - [ ] Signal children should be invalidated in reverse order
 - [ ] Fragments
 - [ ] Property signals
-- [ ] Preserve child order when re-rendering
+- [x] Preserve child order when re-rendering
+- [ ] Control flow components (if, for, switch)

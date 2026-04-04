@@ -1,39 +1,43 @@
 import type { Dispose, HJNode } from './types';
 import { cleanup, createEffect, createRoot } from './signal';
 
-function applyResolvedNode(
-  node: Exclude<HJNode, Function>,
-  target: HTMLElement,
-) {
+function createNodeElement(node: Exclude<HJNode, Function>): Node {
   if (!node) {
-    return;
+    return new Comment();
   }
-
-  let element: Node;
 
   if (typeof node === 'string') {
-    element = document.createTextNode(node);
-  } else {
-    const htmlElement = document.createElement(node.tagName);
-    element = htmlElement;
-    const { ref, ...attributes } = node.properties;
-    Object.assign(htmlElement, attributes);
-    for (const child of node.children) {
-      _render(child, htmlElement);
-    }
-    ref?.(htmlElement as any);
+    return document.createTextNode(node);
   }
 
-  target.appendChild(element);
-  cleanup(() => target.removeChild(element));
+  const element = document.createElement(node.tagName);
+
+  const { ref, ...attributes } = node.properties;
+  Object.assign(element, attributes);
+  for (const child of node.children) {
+    _render(child, element);
+  }
+  ref?.(element as any);
+  return element;
 }
 
 function _render(node: HJNode, target: HTMLElement) {
+  let htmlNode: undefined | Node;
   if (typeof node === 'function') {
-    createEffect(() => applyResolvedNode(node(), target));
+    createEffect(() => {
+      const prev = htmlNode;
+      htmlNode = createNodeElement(node());
+      if (prev) {
+        target.replaceChild(htmlNode, prev);
+      } else {
+        target.appendChild(htmlNode);
+      }
+    });
   } else {
-    applyResolvedNode(node, target);
+    htmlNode = createNodeElement(node);
+    target.appendChild(htmlNode);
   }
+  cleanup(() => target.removeChild(htmlNode!));
 }
 
 export function render(
