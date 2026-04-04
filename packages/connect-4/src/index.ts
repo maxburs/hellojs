@@ -5,9 +5,11 @@ function Connect4() {
   const text = createSignal('');
   const num = createSignal(1);
 
-  setInterval(() => {
+  const intervalId = setInterval(() => {
     num.set(num() + 1);
   }, 1_000);
+
+  cleanup(() => clearInterval(intervalId));
 
   const ref = (element: HTMLInputElement) => {
     const onChange = (ev: InputEvent) => {

@@ -106,7 +106,7 @@ export function createComputed<T>(cb: () => T): Computed<T> {
   return computed;
 }
 
-export function createEffect(cb: () => void) {
+export function createEffect(cb: () => void): void {
   if (!parent) {
     throw new Error(`effect must be called in a reactive context`);
   }
@@ -145,7 +145,7 @@ export function createEffect(cb: () => void) {
   effect__evaluate();
 }
 
-export function cleanup(cb: () => void) {
+export function cleanup(cb: () => void): void {
   if (!parent) {
     throw new Error(`cleanup must be called in a reactive context`);
   }
