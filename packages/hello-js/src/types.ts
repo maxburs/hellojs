@@ -6,8 +6,9 @@ export const NODE_IDENTIFIER: unique symbol = Symbol();
 
 export type Props<
   T extends keyof HTMLElementTagNameMap = keyof HTMLElementTagNameMap,
-> = Partial<HTMLElementTagNameMap[T]> & {
+> = Partial<Omit<HTMLElementTagNameMap[T], 'style'>>  & {
   ref?: (element: HTMLElementTagNameMap[T]) => void;
+  style?: string;
 };
 
 export interface HJElementNode<

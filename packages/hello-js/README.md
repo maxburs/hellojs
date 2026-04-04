@@ -8,3 +8,4 @@
 - [ ] Signal children should be invalidated in reverse order
 - [ ] Fragments
 - [ ] Property signals
+- [ ] Preserve child order when re-rendering
