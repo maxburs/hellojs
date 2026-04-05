@@ -41,9 +41,12 @@ function _render(node: HJNode, target: HTMLElement) {
 }
 
 export function render(
-  node: HJNode,
+  node: HJNode | (() => HJNode),
   target: HTMLElement,
   options?: { signal?: AbortSignal },
 ): Dispose {
-  return createRoot(() => _render(node, target), options);
+  return createRoot(
+    () => _render(typeof node === 'function' ? node() : node, target),
+    options,
+  );
 }

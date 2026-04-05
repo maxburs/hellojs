@@ -35,4 +35,4 @@ function Connect4() {
     );
 }
 
-render(Connect4(), document.getElementById('app')!);
+render(() => Connect4(), document.getElementById('app')!);
