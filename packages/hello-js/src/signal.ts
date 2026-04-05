@@ -9,6 +9,12 @@ function createName() {
   return lastName++;
 }
 
+function log(...args: unknown[]) {
+  if (logging) {
+    console.log(...args);
+  }
+}
+
 function group(...args: unknown[]) {
   if (logging) {
     console.group(...args);
@@ -59,20 +65,25 @@ export interface MutableSignal<T> extends Signal<T> {
   set(value: T): void;
 }
 
-export function createSignal<T>(value: T): MutableSignal<T> {
+export function createSignal<T>(
+  value: T,
+  options?: { name?: number | string },
+): MutableSignal<T> {
+  const name = options?.name ?? createName();
   let readers: Invalidate[] = [];
 
   function signal() {
-    console.log('signal read')
+    group(`signal-${name} read`);
     const _parent = parent;
     if (_parent?.invalidate) {
       readers.push(_parent.invalidate);
       _parent.onDispose.addEventListener('abort', () => {
         readers = readers.filter((r) => r !== _parent.invalidate);
-        console.log('signal readers updated:', readers);
+        log(`signal-${name} reader removed`, readers);
       });
-      console.log('reader added', readers);
+      log(`reader added`, readers);
     }
+    groupEnd();
     return value;
   }
 
@@ -94,11 +105,13 @@ export function createComputed<T>(
   cb: (options: { signal: AbortSignal }) => T,
   options?: { name: string },
 ): Computed<T> {
-  if (!parent) {
-    throw new Error(`createComputed must be called in a reactive context`);
-  }
-
   const name = options?.name ?? createName();
+
+  if (!parent) {
+    throw new Error(
+      `createComputed-${name} must be called in a reactive context`,
+    );
+  }
 
   const disposeSignal = parent.onDispose;
 
@@ -121,7 +134,7 @@ export function createComputed<T>(
 
   function computed__invalidate() {
     if (disposeSignal.aborted) {
-      throw new Error(`runtime bug: computed is disposed`);
+      throw new Error(`runtime bug: computed-${name} is disposed`);
     }
     group(`computed-${name}__invalidate`, state);
     if (!state) {
@@ -136,7 +149,7 @@ export function createComputed<T>(
   }
 
   function computed(): T {
-    if (disposeSignal) {
+    if (disposeSignal.aborted) {
       throw new Error(`computed-${name} is disposed`);
     }
     group(`computed-${name} read`, state);
@@ -179,11 +192,14 @@ export function createEffect(
   cb: (options: { signal: AbortSignal }) => void,
   options?: { name?: number | string },
 ): void {
+  const name = options?.name ?? createName();
+
   if (!parent) {
-    throw new Error(`effect must be called in a reactive context`);
+    throw new Error(`effect-${name} must be called in a reactive context`);
   }
 
-  const name = options?.name ?? createName();
+  log(`effect-${name} created`);
+
   const disposedSignal = parent.onDispose;
   disposedSignal.addEventListener('abort', effect__dispose);
 
@@ -193,11 +209,9 @@ export function createEffect(
     return {
       invalidate: effect__invalidate,
       controller,
-      onDispose: _controller.signal,
+      onDispose: controller.signal,
     };
   }
-
-  const _controller = new AbortController();
 
   let state = createState();
 
@@ -210,13 +224,14 @@ export function createEffect(
   function effect__clear() {
     const prev = state;
     state = createState();
-    console.log('aborting effect signal')
     prev.controller.abort();
   }
 
   function effect__invalidate() {
     if (disposedSignal.aborted) {
-      throw new Error(`runtime bug: effect is disposed`);
+      return;
+      // Currently signals and effects invalidate their dependents if they're disposed during the invalidate loop
+      // throw new Error(`runtime bug: effect-${name} is disposed`);
     }
     group(`effect-${name}__invalidate`);
     effect__clear();
@@ -226,9 +241,7 @@ export function createEffect(
 
   function effect__evaluate() {
     group(`effect-${name}__evaluate`);
-
     runWithParent(state, cb, { signal: state.onDispose });
-
     groupEnd();
   }
 

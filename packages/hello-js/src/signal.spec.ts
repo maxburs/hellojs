@@ -7,12 +7,11 @@ import {
   createEffect,
 } from './signal';
 
-// TODO: A2 is run an extra time
 test('effect', () => {
   const timeline: string[] = [];
 
-  const signalA = createSignal(1);
-  const signalB = createSignal(1);
+  const signalA = createSignal(1, { name: 'a' });
+  const signalB = createSignal(1, { name: 'b' });
 
   const dispose = createRoot(() => {
     createEffect(
@@ -35,24 +34,27 @@ test('effect', () => {
     );
   });
 
-  console.log('set a to 2');
+  timeline.push('set a to 2');
   signalA.set(2);
-  console.log('set b to 2');
+  timeline.push('set b to 2');
   signalB.set(2);
-  console.log('dispose');
+  timeline.push('dispose');
   dispose();
-  console.log('set b to 3');
+  timeline.push('set b to 3');
   signalB.set(3);
 
   expect(timeline).toMatchInlineSnapshot(`
     [
-      "[read A1]: a",
-      "[read A2]: a",
-      "[read B]: b",
-      "[read A2]: 1",
       "[read A1]: 1",
       "[read A2]: 1",
+      "[read B]: 1",
+      "set a to 2",
+      "[read A1]: 2",
+      "[read A2]: 2",
+      "set b to 2",
       "[read B]: 2",
+      "dispose",
+      "set b to 3",
     ]
   `);
 });
@@ -98,8 +100,8 @@ test('cleanup complex', () => {
   expect(timeline).toMatchInlineSnapshot(`
     [
       "[cleanup 2]",
-      "[cleanup 2]",
       "[cleanup 1]",
+      "[cleanup 2]",
       "[cleanup 3]",
     ]
   `);
@@ -112,10 +114,6 @@ test('compound', () => {
 
   const dispose = createRoot(() => {
     const double = createComputed(() => {
-      // cleanup(() => timeline.push('cleanup'));
-      // createEffect(() => {
-      //   timeline.push('effect1');
-      // })
       return signalA() * 2;
     });
 
@@ -129,6 +127,7 @@ test('compound', () => {
   signalA.set(4);
 
   console.log('dispose');
+  timeline.push('dispose');
   dispose();
 
   expect(timeline).toMatchInlineSnapshot(`
@@ -136,34 +135,47 @@ test('compound', () => {
       "read double: 4",
       "set to 4",
       "read double: 8",
+      "dispose",
     ]
   `);
 });
 
-test.only('effect dispose', () => {
+test('effect dispose', () => {
   const timeline: string[] = [];
 
   const signalA = createSignal(2);
 
   const dispose = createRoot(() => {
+    cleanup(() => timeline.push('cleanup1'));
     createEffect(() => {
-      timeline.push(`signalA: ${signalA()}`);
-      cleanup(() => timeline.push('cleanup'));
+      cleanup(() => timeline.push('cleanup2'));
+      createEffect(() => {
+        timeline.push(`signalA: ${signalA()}`);
+        cleanup(() => timeline.push('cleanup3'));
+      });
+      cleanup(() => timeline.push('cleanup4'));
     });
   });
 
-  console.log('dispose');
+  timeline.push('set to 4');
+  signalA.set(4);
+
   dispose();
 
-  console.log('set to 8');
   timeline.push('set to 8');
   signalA.set(4);
 
   expect(timeline).toMatchInlineSnapshot(`
     [
-      "read double: 4",
+      "signalA: 2",
       "set to 4",
-      "read double: 8",
+      "cleanup3",
+      "signalA: 4",
+      "cleanup1",
+      "cleanup2",
+      "cleanup3",
+      "cleanup4",
+      "set to 8",
     ]
   `);
-})
+});
