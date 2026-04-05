@@ -1,38 +1,34 @@
 import { render, h } from 'hello-js';
-import { cleanup, createSignal } from '../../../packages/hello-js/src/signal.ts';
+import {
+  cleanup,
+  createSignal,
+} from '../../../packages/hello-js/src/signal.ts';
 
-function Connect4() {
-  const text = createSignal('');
+function Counter() {
   const num = createSignal(1);
 
-  const intervalId = setInterval(() => {
+  function increment() {
     num.set(num() + 1);
-  }, 1_000);
+  }
+
+  const intervalId = setInterval(increment, 1_000);
 
   cleanup(() => clearInterval(intervalId));
 
-  const ref = (element: HTMLInputElement) => {
-    const onChange = (ev: InputEvent) => {
-      text.set((ev.target as HTMLInputElement).value);
-    };
-    element.addEventListener('input', onChange);
-    cleanup(() => element.removeEventListener('input', onChange));
+  const ref = (element: HTMLElement) => {
+    element.addEventListener('click', increment);
+    cleanup(() => element.removeEventListener('click', increment));
   };
 
   return () =>
     h(
       'div',
-      h(
-        'h1',
-        { style: 'background-color: blue' },
-        'hello',
-        ' ',
-        h('span', 'world'),
+      h('button', { ref }, 'increment'),
+      ' ',
+      h('span', { style: 'background-color: salmon' }, 'value: ', () =>
+        num().toString(),
       ),
-      h('input', { ref }),
-      h('div', text),
-      h('div', () => num().toString()),
     );
 }
 
-render(() => Connect4(), document.getElementById('app')!);
+render(() => Counter(), document.getElementById('app')!);
