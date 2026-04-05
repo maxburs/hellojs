@@ -81,7 +81,7 @@ test('props', () => {
   dispose();
 });
 
-test.only('child order is maintained', () => {
+test('child order is maintained', () => {
   const a = createSignal(1);
   const b = createSignal(1);
   const c = createSignal(true);

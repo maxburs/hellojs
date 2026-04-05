@@ -8,29 +8,41 @@ import {
 } from './signal';
 
 // TODO: A2 is run an extra time
-test('effect', ({ signal }) => {
+test('effect', () => {
   const timeline: string[] = [];
 
-  const signalA = createSignal('a');
-  const signalB = createSignal('b');
+  const signalA = createSignal(1);
+  const signalB = createSignal(1);
 
-  createRoot(
-    () => {
-      createEffect(() => {
+  const dispose = createRoot(() => {
+    createEffect(
+      () => {
         timeline.push(`[read A1]: ${signalA()}`);
-        createEffect(() => {
-          timeline.push(`[read A2]: ${signalA()}`);
-        });
-      });
-      createEffect(() => {
+        createEffect(
+          () => {
+            timeline.push(`[read A2]: ${signalA()}`);
+          },
+          { name: 'b' },
+        );
+      },
+      { name: 'a' },
+    );
+    createEffect(
+      () => {
         timeline.push(`[read B]: ${signalB()}`);
-      });
+      },
+      { name: 'c' },
+    );
+  });
 
-      signalA.set('1');
-      signalB.set('2');
-    },
-    { signal },
-  );
+  console.log('set a to 2');
+  signalA.set(2);
+  console.log('set b to 2');
+  signalB.set(2);
+  console.log('dispose');
+  dispose();
+  console.log('set b to 3');
+  signalB.set(3);
 
   expect(timeline).toMatchInlineSnapshot(`
     [
@@ -93,7 +105,7 @@ test('cleanup complex', () => {
   `);
 });
 
-test.only('compound', () => {
+test('compound', () => {
   const timeline: string[] = [];
 
   const signalA = createSignal(2);
@@ -127,3 +139,31 @@ test.only('compound', () => {
     ]
   `);
 });
+
+test.only('effect dispose', () => {
+  const timeline: string[] = [];
+
+  const signalA = createSignal(2);
+
+  const dispose = createRoot(() => {
+    createEffect(() => {
+      timeline.push(`signalA: ${signalA()}`);
+      cleanup(() => timeline.push('cleanup'));
+    });
+  });
+
+  console.log('dispose');
+  dispose();
+
+  console.log('set to 8');
+  timeline.push('set to 8');
+  signalA.set(4);
+
+  expect(timeline).toMatchInlineSnapshot(`
+    [
+      "read double: 4",
+      "set to 4",
+      "read double: 8",
+    ]
+  `);
+})

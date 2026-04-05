@@ -2,55 +2,53 @@ import type { Dispose } from './types';
 
 export type Invalidate = () => void;
 
-let parentInvalidate: undefined | Invalidate;
-let parentChildren: undefined | Dispose[];
+let lastName = 0;
+let logging = true;
 
-function runWithParent<T>(
-  invalidate: undefined | Invalidate,
-  children: Dispose[],
-  cb: () => T,
+function createName() {
+  return lastName++;
+}
+
+function group(...args: unknown[]) {
+  if (logging) {
+    console.group(...args);
+  }
+}
+
+function groupEnd() {
+  if (logging) {
+    console.groupEnd();
+  }
+}
+
+let parent: undefined | Parent;
+
+interface Parent {
+  invalidate: undefined | Invalidate;
+  onDispose: AbortSignal;
+}
+
+function runWithParent<T, Args extends unknown[]>(
+  _parent: Parent,
+  cb: (...args: Args) => T,
+  ...args: Args
 ): T {
-  const _parent = parentInvalidate;
-  const _parentChildren = parentChildren;
-  parentInvalidate = invalidate;
-  parentChildren = children;
+  const prev = parent;
+  parent = _parent;
 
-  const value = cb();
+  const value = cb(...args);
 
-  parentInvalidate = _parent;
-  parentChildren = _parentChildren;
+  parent = prev;
 
   return value;
 }
 
-// let context: undefined | Entity;
-
-// class Entity {
-//   private _children: Entity[] = [];
-
-//   constructor(
-//     private readonly  onInvalidate: undefined | Invalidate,
-//     public readonly  dispose: undefined | Dispose,
-//   ) {}
-
-//   get children(): readonly Entity[] {
-//     return this._children;
-//   }
-//   addDependent(dependent: Entity) {
-//     this._children.push(dependent);
-//   }
-//   // children: Invalidate[];
-// }
-
-function disposeChildren(children: Dispose[]) {
-  console.group('clear children');
-  for (let i = children.length - 1; i >= 0; i--) {
-    children[i]();
+function invalidateReaders(readers: Invalidate[]) {
+  group('invalidateReaders', readers);
+  for (const invalidate of readers) {
+    invalidate();
   }
-  // for (const d of children) {
-  //   d();
-  // }
-  console.groupEnd();
+  groupEnd();
 }
 
 export interface Signal<T = unknown> {
@@ -62,101 +60,114 @@ export interface MutableSignal<T> extends Signal<T> {
 }
 
 export function createSignal<T>(value: T): MutableSignal<T> {
+  let readers: Invalidate[] = [];
+
   function signal() {
-    if (parentInvalidate) {
-      _children.push(parentInvalidate);
+    console.log('signal read')
+    const _parent = parent;
+    if (_parent?.invalidate) {
+      readers.push(_parent.invalidate);
+      _parent.onDispose.addEventListener('abort', () => {
+        readers = readers.filter((r) => r !== _parent.invalidate);
+        console.log('signal readers updated:', readers);
+      });
+      console.log('reader added', readers);
     }
     return value;
   }
 
-  let _children: Dispose[] = [];
-
   signal.set = function set(_value: T) {
-    const deps = _children;
+    const prevReaders = readers;
 
-    // Update state before invalidating deps
-    _children = [];
+    readers = [];
     value = _value;
 
-    disposeChildren(deps);
+    invalidateReaders(prevReaders);
   };
-
-  // const entity: Entity = {
-  //   invalidate: undefined,
-  //   dispose: undefined,
-  //   children:
-  // }
-
-  // signal._children = _children;
 
   return signal as MutableSignal<T>;
 }
 
 export type Computed<T> = () => T;
 
-export function createComputed<T>(cb: () => T): Computed<T> {
-  if (!parentChildren) {
+export function createComputed<T>(
+  cb: (options: { signal: AbortSignal }) => T,
+  options?: { name: string },
+): Computed<T> {
+  if (!parent) {
     throw new Error(`createComputed must be called in a reactive context`);
   }
 
-  let disposed = false;
+  const name = options?.name ?? createName();
 
-  parentChildren.push(computed__dispose);
+  const disposeSignal = parent.onDispose;
+
+  disposeSignal.addEventListener('abort', computed__dispose);
 
   function computed__dispose() {
-    console.group('computed__dispose');
-    disposed = true;
-    if (state) {
-      disposeChildren(state.children);
-    }
-    console.groupEnd();
+    group(`computed-${name}__dispose`);
+    state?.controller.abort();
+    groupEnd();
   }
 
-  let state: undefined | { children: Dispose[]; readers: Invalidate[], value: T };
+  let state:
+    | undefined
+    | {
+        controller: AbortController;
+        parent: Parent;
+        readers: Invalidate[];
+        value: T;
+      };
 
   function computed__invalidate() {
-    if (disposed) {
-      throw new Error(`Computed is disposed`);
+    if (disposeSignal.aborted) {
+      throw new Error(`runtime bug: computed is disposed`);
     }
-    console.group('computed__invalidate', state);
+    group(`computed-${name}__invalidate`, state);
     if (!state) {
-      console.groupEnd();
+      groupEnd();
       return;
     }
     const prevState = state;
     state = undefined;
-    disposeChildren(prevState.children);
-    disposeChildren(prevState.readers);
-    console.groupEnd();
+
+    invalidateReaders(prevState.readers);
+    groupEnd();
   }
 
   function computed(): T {
-    console.group('read computed', state);
+    if (disposeSignal) {
+      throw new Error(`computed-${name} is disposed`);
+    }
+    group(`computed-${name} read`, state);
     if (!state) {
-      const children: Dispose[] = [];
+      const controller = new AbortController();
+      const signal = controller.signal;
 
-      const value = runWithParent(computed__invalidate, children, cb);
+      const parent: Parent = {
+        invalidate: computed__invalidate,
+        onDispose: signal,
+      };
 
-      // const _parent = parentInvalidate;
-      // const _parentChildren = parentChildren;
-      // parentInvalidate = computed__invalidate;
-      // parentChildren = children;
+      const value = runWithParent(parent, cb, { signal });
 
-      // const _value = cb();
-
-      // console.log('computed -- children', children);
-
-      // parentInvalidate = _parent;
-      // parentChildren = _parentChildren;
-
-      state = { children, readers: [], value };
+      state = { controller, parent, readers: [], value };
     }
 
-    if (parentInvalidate) {
-      state.readers.push(parentInvalidate);
+    const _parent = parent;
+    if (_parent?.invalidate) {
+      const _state = state;
+      _state.readers.push(_parent.invalidate);
+      _parent.onDispose.addEventListener('abort', () => {
+        if (_state === state) {
+          _state.readers = _state.readers.filter(
+            (r) => r !== _parent.invalidate,
+          );
+        }
+      });
     }
 
-    console.groupEnd();
+    groupEnd();
 
     return state.value;
   }
@@ -164,77 +175,83 @@ export function createComputed<T>(cb: () => T): Computed<T> {
   return computed;
 }
 
-export function createEffect(cb: () => void): void {
-  if (!parentChildren) {
+export function createEffect(
+  cb: (options: { signal: AbortSignal }) => void,
+  options?: { name?: number | string },
+): void {
+  if (!parent) {
     throw new Error(`effect must be called in a reactive context`);
   }
-  parentChildren.push(effect__dispose);
 
-  let disposed = false;
-  let children: Dispose[] = [];
+  const name = options?.name ?? createName();
+  const disposedSignal = parent.onDispose;
+  disposedSignal.addEventListener('abort', effect__dispose);
+
+  function createState() {
+    const controller = new AbortController();
+
+    return {
+      invalidate: effect__invalidate,
+      controller,
+      onDispose: _controller.signal,
+    };
+  }
+
+  const _controller = new AbortController();
+
+  let state = createState();
 
   function effect__dispose() {
-    console.group('effect__dispose')
-    disposed = true;
+    group(`effect-${name}__dispose`);
     effect__clear();
-    console.groupEnd();
+    groupEnd();
   }
 
   function effect__clear() {
-    const deps = children;
-    children = [];
-    disposeChildren(deps);
+    const prev = state;
+    state = createState();
+    console.log('aborting effect signal')
+    prev.controller.abort();
   }
 
   function effect__invalidate() {
-    if (disposed) {
-      return;
+    if (disposedSignal.aborted) {
+      throw new Error(`runtime bug: effect is disposed`);
     }
-    console.group('effect__invalidate');
+    group(`effect-${name}__invalidate`);
     effect__clear();
     effect__evaluate();
-    console.groupEnd();
+    groupEnd();
   }
 
   function effect__evaluate() {
-    console.group('effect__evaluate');
+    group(`effect-${name}__evaluate`);
 
-    runWithParent(effect__invalidate, children, cb);
+    runWithParent(state, cb, { signal: state.onDispose });
 
-    // const _parent = parentInvalidate;
-    // const _parentChildren = parentChildren;
-    // parentInvalidate = effect__invalidate;
-    // parentChildren = children;
-
-    // cb();
-
-    // parentInvalidate = _parent;
-    // parentChildren = _parentChildren;
-    console.groupEnd();
+    groupEnd();
   }
 
   effect__evaluate();
 }
 
 export function cleanup(cb: () => void): void {
-  if (!parentChildren) {
+  if (!parent) {
     throw new Error(`cleanup must be called in a reactive context`);
   }
-  parentChildren.push(cb);
+  parent.onDispose.addEventListener('abort', cb);
 }
 
 export function createRoot(
   cb: () => void,
   options?: { signal?: AbortSignal },
 ): Dispose {
-  const children: Dispose[] = [];
+  const controller = new AbortController();
 
   function root__dispose() {
-    console.group('root_dispose', children);
-    for (const d of children) {
-      d();
-    }
-    console.groupEnd();
+    group('root_dispose', controller.signal);
+    controller.abort();
+    groupEnd();
   }
 
   if (options?.signal?.aborted) {
@@ -243,17 +260,7 @@ export function createRoot(
 
   options?.signal?.addEventListener('abort', root__dispose);
 
-  runWithParent(undefined, children, cb);
-
-  // const _reader = parentInvalidate;
-  // const _parent = parentChildren;
-  // parentInvalidate = undefined;
-  // parentChildren = children;
-
-  // cb();
-
-  // parentInvalidate = _reader;
-  // parentChildren = _parent;
+  runWithParent({ onDispose: controller.signal, invalidate: undefined }, cb);
 
   return root__dispose;
 }
