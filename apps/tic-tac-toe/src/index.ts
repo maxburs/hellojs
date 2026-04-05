@@ -102,17 +102,18 @@ function TicTacToe() {
   const status = () => {
     const winner = model.winner();
     if (winner) {
+      const playAgain = h(
+            'button',
+            { ref: createOnclickRef(() => model.reset()) },
+            'Play again?',
+          );
       if (winner === 'stalemate') {
-        return 'Stalemate';
+        return h('div', 'Stalemate ', playAgain);
       } else {
         return h(
           'div',
           `Player ${winner} wins.`,
-          h(
-            'button',
-            { ref: createOnclickRef(() => model.reset()) },
-            'Play again?',
-          ),
+          playAgain,
         );
       }
     } else {
