@@ -1,5 +1,5 @@
 {
-  "name": "connect-4",
+  "name": "tic-tac-toe",
   "type": "module",
   "private": true,
   "sideEffects": false,
