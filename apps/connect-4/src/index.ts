@@ -1,5 +1,5 @@
 import { render, h } from 'hello-js';
-import { cleanup, createSignal } from '../../hello-js/src/signal';
+import { cleanup, createSignal } from '../../../packages/hello-js/src/signal';
 
 function Connect4() {
   const text = createSignal('');

@@ -526,9 +526,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"connect-4@workspace:packages/connect-4":
+"connect-4@workspace:apps/connect-4":
   version: 0.0.0-use.local
-  resolution: "connect-4@workspace:packages/connect-4"
+  resolution: "connect-4@workspace:apps/connect-4"
   dependencies:
     "@tsconfig/node24": "npm:^24.0.4"
     "@types/node": "npm:24"
@@ -544,6 +544,18 @@ __metadata:
   checksum: 10c0/8f2f7a27a1a011cc6cc88cc4da2d7d0cfa5ee0369508baae3d98c260bb3ac520691464e5bbe4ae7cdf09860c1d69ecc6f70c63c6e7c7f7e3f18ec08484dc7d9b
   languageName: node
   linkType: hard
+
+"counter@workspace:apps/counter":
+  version: 0.0.0-use.local
+  resolution: "counter@workspace:apps/counter"
+  dependencies:
+    "@tsconfig/node24": "npm:^24.0.4"
+    "@types/node": "npm:24"
+    prettier: "npm:^3.8.1"
+    typescript: "npm:^6.0.2"
+    vite: "npm:^8.0.3"
+  languageName: unknown
+  linkType: soft
 
 "css-tree@npm:^3.0.0, css-tree@npm:^3.2.1":
   version: 3.2.1

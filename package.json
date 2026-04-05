@@ -9,6 +9,7 @@
     "format": "prettier --write --ignore-unknown ."
   },
   "workspaces": [
+    "./apps/*",
     "./packages/*"
   ],
   "devDependencies": {
