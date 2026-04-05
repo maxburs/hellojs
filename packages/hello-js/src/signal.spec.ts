@@ -1,5 +1,11 @@
 import { test, expect } from 'vitest';
-import { cleanup, createComputed, createRoot, createSignal, createEffect } from './signal';
+import {
+  cleanup,
+  createComputed,
+  createRoot,
+  createSignal,
+  createEffect,
+} from './signal';
 
 // TODO: A2 is run an extra time
 test('effect', ({ signal }) => {
@@ -92,25 +98,24 @@ test.only('compound', () => {
 
   const signalA = createSignal(2);
 
-  const dispose = createRoot(
-    () => {
-      const double = createComputed(() => {
-        // cleanup(() => timeline.push('cleanup'));
-        // createEffect(() => {
-        //   timeline.push('effect1');
-        // })
-        return signalA() * 2
-      });
+  const dispose = createRoot(() => {
+    const double = createComputed(() => {
+      // cleanup(() => timeline.push('cleanup'));
+      // createEffect(() => {
+      //   timeline.push('effect1');
+      // })
+      return signalA() * 2;
+    });
 
-      createEffect(() => {
-        timeline.push(`read double: ${double()}`);
-      });
+    createEffect(() => {
+      timeline.push(`read double: ${double()}`);
+    });
+  });
 
-      console.log('set to 4');
-      timeline.push('set to 4')
-      signalA.set(4);
-    }
-  );
+  console.log('set to 4');
+  timeline.push('set to 4');
+  signalA.set(4);
+
   console.log('dispose');
   dispose();
 
@@ -118,7 +123,6 @@ test.only('compound', () => {
     [
       "read double: 4",
       "set to 4",
-      "read double: 8",
       "read double: 8",
     ]
   `);
