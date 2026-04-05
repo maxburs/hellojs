@@ -3,7 +3,7 @@ import type { Dispose } from './types';
 export type Invalidate = () => void;
 
 let lastName = 0;
-let logging = true;
+let logging = false;
 
 function createName() {
   return lastName++;

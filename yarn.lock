@@ -526,18 +526,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"connect-4@workspace:apps/connect-4":
-  version: 0.0.0-use.local
-  resolution: "connect-4@workspace:apps/connect-4"
-  dependencies:
-    "@tsconfig/node24": "npm:^24.0.4"
-    "@types/node": "npm:24"
-    prettier: "npm:^3.8.1"
-    typescript: "npm:^6.0.2"
-    vite: "npm:^8.0.3"
-  languageName: unknown
-  linkType: soft
-
 "convert-source-map@npm:^2.0.0":
   version: 2.0.0
   resolution: "convert-source-map@npm:2.0.0"
@@ -1394,6 +1382,18 @@ __metadata:
   checksum: 10c0/5c65b8084799bde7a791593a1c1a45d3d6ee98182e3700b24c247b7b8f8654df4191642abbdb07ff25043d45dcff35620827c3997b88ae6c12040f64bed5076b
   languageName: node
   linkType: hard
+
+"tic-tac-toe@workspace:apps/tic-tac-toe":
+  version: 0.0.0-use.local
+  resolution: "tic-tac-toe@workspace:apps/tic-tac-toe"
+  dependencies:
+    "@tsconfig/node24": "npm:^24.0.4"
+    "@types/node": "npm:24"
+    prettier: "npm:^3.8.1"
+    typescript: "npm:^6.0.2"
+    vite: "npm:^8.0.3"
+  languageName: unknown
+  linkType: soft
 
 "tinybench@npm:^2.9.0":
   version: 2.9.0
