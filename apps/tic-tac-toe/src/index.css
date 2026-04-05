@@ -1,0 +1,22 @@
+.wrapper {
+  display: contents;
+}
+#app {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto;
+}
+
+.board {
+  aspect-ratio: 1 / 1;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+}
+
+.status {
+  display: flex;
+  place-content: center;
+  padding: 8px;
+}
